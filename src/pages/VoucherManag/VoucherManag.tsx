@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from "react";
 import GenerateVou from "./GenerateVou";
 import api from "../Api/axiosInstance";
+import usePermission from "../../Hook/usePermission";
 
 const Vouchermanag = () => {
+  // ---------- PERMISSIONS ----------
+  const canViewVoucher = usePermission("voucher:view");
+  const canCreateVoucher = usePermission("voucher:create");
+
+  // ---------- STATES ----------
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [vouchers, setVouchers] = useState<any[]>([]);
+  const [summary, setSummary] = useState({
+    total_vouchers: 0,
+    active_vouchers: 0,
+    redeemed_vouchers: 0,
+    expired_vouchers: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const uiText = {
@@ -21,13 +32,6 @@ const Vouchermanag = () => {
     noData: "No vouchers found",
     statusLabel: "All Status",
   };
-
-  const summaryCards = [
-    { title: "Customers", value: 3560 },
-    { title: "Orders", value: 2875 },
-    { title: "Vouchers", value: 690 },
-    { title: "Revenue", value: 15720 },
-  ];
 
   const statusColors: Record<string, { bg: string; text: string }> = {
     active: { bg: "bg-green-100", text: "text-green-700" },
@@ -52,24 +56,28 @@ const Vouchermanag = () => {
     }
   };
 
-  const fetchFilteredVouchers = async (
-    searchValue = "",
-    statusValue = "All"
-  ) => {
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await api.get(`${API_BASE_URL}/vouchers/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSummary(res.data);
+    } catch (err) {
+      console.error("Error fetching stats:", err);
+    }
+  };
+
+  const fetchFilteredVouchers = async (searchValue = "", statusValue = "All") => {
     try {
       setLoading(true);
       const token = localStorage.getItem("access_token");
       let url = `${API_BASE_URL}/vouchers/filter?`;
-
       if (searchValue) url += `search=${encodeURIComponent(searchValue)}&`;
-      if (statusValue !== "All")
-        url += `status=${encodeURIComponent(statusValue)}&`;
-
+      if (statusValue !== "All") url += `status=${encodeURIComponent(statusValue)}&`;
       const res = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-
       setVouchers(res.data);
       setError("");
     } catch (err) {
@@ -78,12 +86,14 @@ const Vouchermanag = () => {
     } finally {
       setLoading(false);
     }
-    
   };
 
   useEffect(() => {
-    fetchVouchers();
-  }, []);
+    if (canViewVoucher) {
+      fetchVouchers();
+      fetchStats();
+    }
+  }, [canViewVoucher]);
 
   useEffect(() => {
     const delay = setTimeout(() => {
@@ -96,21 +106,39 @@ const Vouchermanag = () => {
     return () => clearTimeout(delay);
   }, [search, status]);
 
+  if (!canViewVoucher) {
+    return (
+      <div className="p-6 text-center text-red-500 text-xl font-semibold">
+        ⛔ You don't have permission to view vouchers
+      </div>
+    );
+  }
+
+  const summaryCards = [
+    { title: "Total Vouchers", value: summary.total_vouchers },
+    { title: "Active Vouchers", value: summary.active_vouchers },
+    { title: "Redeemed Vouchers", value: summary.redeemed_vouchers },
+    { title: "Expired Vouchers", value: summary.expired_vouchers },
+  ];
+
+  // ---------- JSX ----------
   return (
     <div className="space-y-8">
       <div className="flex justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">
-            {uiText.pageTitle}
-          </h1>
+          <h1 className="text-2xl font-semibold text-gray-800">{uiText.pageTitle}</h1>
           <p className="text-gray-500">{uiText.pageSubtitle}</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-6 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
-        >
-          Generate Voucher
-        </button>
+
+        {canCreateVoucher && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-6 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
+          >
+            Generate Voucher
+          </button>
+        )}
+
         <GenerateVou
           isOpen={showModal}
           onClose={() => setShowModal(false)}
@@ -122,6 +150,7 @@ const Vouchermanag = () => {
               issued_at: new Date().toISOString(),
             };
             setVouchers((prev) => [voucherObj, ...prev]);
+            fetchStats();
           }}
         />
       </div>
@@ -132,17 +161,16 @@ const Vouchermanag = () => {
             key={index}
             className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm text-center"
           >
-            <h3 className="text-gray-500 text-sm">{card.title}</h3>
+            <h3 className="text-gray-500 text-sm capitalize">{card.title}</h3>
             <p className="text-2xl font-semibold text-gray-800">{card.value}</p>
           </div>
         ))}
       </div>
 
       <div className="rounded-2xl bg-white p-6 border border-gray-200 shadow-sm space-y-5">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          {uiText.tableTitle}
-        </h1>
+        <h1 className="text-2xl font-semibold text-gray-800">{uiText.tableTitle}</h1>
         <p className="text-gray-500">{uiText.tableSubtitle}</p>
+
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <input
             type="text"
@@ -182,6 +210,7 @@ const Vouchermanag = () => {
                   <th className="px-6 py-3">Status</th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-gray-100">
                 {vouchers.map((voucher, i) => (
                   <tr
@@ -196,11 +225,9 @@ const Vouchermanag = () => {
                     <td className="px-6 py-3">
                       <span
                         className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${
-                          statusColors[voucher.status?.toLowerCase()]?.bg ||
-                          "bg-gray-100"
+                          statusColors[voucher.status?.toLowerCase()]?.bg || "bg-gray-100"
                         } ${
-                          statusColors[voucher.status?.toLowerCase()]?.text ||
-                          "text-gray-700"
+                          statusColors[voucher.status?.toLowerCase()]?.text || "text-gray-700"
                         }`}
                       >
                         {voucher.status || "Unknown"}
@@ -221,11 +248,9 @@ const Vouchermanag = () => {
                     <span className="font-medium">{voucher.code}</span>
                     <span
                       className={`text-xs px-3 py-1 rounded-full ${
-                        statusColors[voucher.status?.toLowerCase()]?.bg ||
-                        "bg-gray-100"
+                        statusColors[voucher.status?.toLowerCase()]?.bg || "bg-gray-100"
                       } ${
-                        statusColors[voucher.status?.toLowerCase()]?.text ||
-                        "text-gray-700"
+                        statusColors[voucher.status?.toLowerCase()]?.text || "text-gray-700"
                       }`}
                     >
                       {voucher.status || "Unknown"}
@@ -235,8 +260,7 @@ const Vouchermanag = () => {
                     <strong>Batch:</strong> {voucher.batch_id}
                   </p>
                   <p className="text-sm text-gray-600">
-                    <strong>Issued:</strong>{" "}
-                    {new Date(voucher.issued_at).toLocaleDateString()}
+                    <strong>Issued:</strong> {new Date(voucher.issued_at).toLocaleDateString()}
                   </p>
                 </div>
               ))}

@@ -7,7 +7,6 @@ const GenerateVou = ({ isOpen, onClose,onVoucherCreated }) => {
   const [voucherNumber, setVoucherNumber] = useState("1");
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
   const handleGenerate = async () => {
   if (!voucherNumber) {
     alert("Please enter the number of vouchers to generate.");
@@ -19,14 +18,14 @@ const GenerateVou = ({ isOpen, onClose,onVoucherCreated }) => {
     const storedUser = localStorage.getItem("user");
 
     if (!storedUser) {
-      console.error("⚠️ No user found in localStorage!");
+      console.error(" No user found in localStorage!");
       alert("Please log in first.");
       return;
     }
 
     const user = JSON.parse(storedUser);
     const token = user.access_token;
-    console.log("🔐 Using token:", token);
+    console.log(" Using token:", token);
 
     const res = await axios.post(
       `${API_BASE_URL}/vouchers/bundle?total=${voucherNumber}`,
@@ -46,7 +45,7 @@ const GenerateVou = ({ isOpen, onClose,onVoucherCreated }) => {
     
     onClose();
   } catch (err) {
-    console.error("❌ Error generating voucher:", err);
+    console.error(" Error generating voucher:", err);
     alert("Failed to generate voucher. Please try again.");
   } finally {
     setLoading(false);

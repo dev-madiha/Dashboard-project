@@ -7,6 +7,7 @@ import api from "./Api/axiosInstance";
 const UserManag = () => {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -18,6 +19,7 @@ const UserManag = () => {
         const res = await api.get("/auth/");
         setUsers(res.data);
         toast.success("Users loaded successfully!");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         console.error("Error fetching users:", err);
         setError("Failed to fetch user data. Please log in again.");
@@ -44,6 +46,7 @@ const UserManag = () => {
   };
 
   const navigate = useNavigate();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEdit = (user: any) => {
     navigate(`/admin/user/edit-user/${user.id}`, { state: user });
   };
@@ -52,19 +55,21 @@ const UserManag = () => {
     navigate("/admin/user/create");
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDelete = async (id: any) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
       await api.delete(`/auth/${id}`);
       toast.success("User deleted successfully!");
-
       setUsers((prev) => prev.filter((user) => user.id !== id));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("Error deleting user:", error);
     }
   };
 
   return (
+
     <div className="space-y-8">
       <ToastContainer position="top-right" autoClose={3000} />
       <div>
@@ -86,8 +91,8 @@ const UserManag = () => {
             count = users.filter((u) => !u.is_active).length;
           if (title === "Doctors")
             count = users.filter((u) => u.role === "doctor").length;
-          
           return (
+
             <div
               key={i}
               className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]"
@@ -114,6 +119,7 @@ const UserManag = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between w-full">
+          
           <input
             type="text"
             placeholder="Search by username, email, or role"
@@ -166,7 +172,6 @@ const UserManag = () => {
                   <th className="px-6 py-3">Active</th>
                 </tr>
               </thead>
-
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {filtered.length > 0 ? (
                   filtered.map((user) => (
@@ -187,7 +192,6 @@ const UserManag = () => {
                           {user.is_active ? "Active" : "Inactive"}
                         </span>
                       </td>
-
                       <td className="px-6 py-3 flex items-center gap-3">
                         <button
                           onClick={() => handleEdit(user)}

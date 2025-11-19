@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-
 import { useNavigate, Link } from "react-router-dom";
 
 export default function UserDropdown() {
@@ -26,7 +25,6 @@ export default function UserDropdown() {
   const user = JSON.parse(storedUser);
   console.log(user);
   const handleLogout = () => {
-
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");

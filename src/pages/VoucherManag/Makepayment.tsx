@@ -1,22 +1,22 @@
+
 import React, { useState } from "react";
 import { X } from "lucide-react";
 import axios from "axios";
 
 const MakePaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
+
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("credit_card");
   const [reference, setReference] = useState("");
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
   const handlePayment = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("access_token");
-
       const res = await axios.post(
-        `${API_BASE_URL}/payments/`, 
+        `${API_BASE_URL}/payments/`,
         {
           amount,
           payment_method: paymentMethod,
@@ -26,7 +26,6 @@ const MakePaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
       onPaymentSuccess(res.data);
       onClose();
     } catch (err) {
@@ -37,9 +36,10 @@ const MakePaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
     }
   };
 
-  if (!isOpen) return null;
-  
+  if (!isOpen) 
+    return null;
   return (
+
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg relative">
         <button

@@ -1,3 +1,4 @@
+ 
 import axios, { AxiosError, AxiosInstance } from "axios";
 import useAuthStore from "../../store/authStore";
 
@@ -10,7 +11,7 @@ const api: AxiosInstance = axios.create({
     Accept: "application/json",
   },
 });
- 
+
 api.interceptors.request.use((config) => {
   const authStore = useAuthStore.getState();
   let token = authStore.accessToken;
@@ -22,20 +23,17 @@ api.interceptors.request.use((config) => {
       token = userObj.access_token;
     }
   }
-
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-
   return config;
 });
-
 
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
-    if (error.response?.status === 401) { 
-      useAuthStore.getState().logout(); 
+    if (error.response?.status === 401) {
+      useAuthStore.getState().logout();
       localStorage.clear();
       window.location.href = "/signin";
     }

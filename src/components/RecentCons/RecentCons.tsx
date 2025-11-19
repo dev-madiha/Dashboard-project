@@ -10,7 +10,6 @@ const RecentCons = () => {
 
   return (
     <div className="bg-white shadow-md rounded-2xl p-5">
-      {/* Header */}
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-lg font-semibold text-gray-800">
           Recent Consultations
@@ -24,7 +23,6 @@ const RecentCons = () => {
         Your latest completed consultations today
       </p>
 
-      {/* List */}
       <div className="space-y-3">
         {recent.map((item) => (
           <div

@@ -1,23 +1,26 @@
 
-
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation } from "react-router-dom";
 import { GridIcon, UserCircleIcon, HorizontaLDots } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
+import { useAuth } from "../context/AuthContext";
 import SidebarWidget from "./SidebarWidget";
 
- type NavItem = {
+type UserRole = 'admin' | 'doctor' | 'patient';
+type NavItem = {
   icon: React.ReactElement;
   name: string;
   path?: string;
   subItems?: { name: string; path: string }[];
- };
+  roles: UserRole[]; 
+
+};
 
 const navItems: NavItem[] = [
-
   {
     icon: <GridIcon />,
     name: "Admin Dashboard",
+    roles: ['admin'], 
     subItems: [
       { name: "Dashboard", path: "/admin/dashboard" },
       { name: "Voucher Management", path: "/admin/voucher" },
@@ -31,6 +34,7 @@ const navItems: NavItem[] = [
   {
     icon: <UserCircleIcon />,
     name: "Doctor Dashboard",
+    roles: ['doctor'], 
     subItems: [
       { name: "Dashboard", path: "/doctor/dashboard" },
       { name: "Patient Queue", path: "/doctor/Patientqueue" },
@@ -44,42 +48,56 @@ const navItems: NavItem[] = [
   {
     icon: <UserCircleIcon />,
     name: "Patient Dashboard",
-    subItems: [{ name: "Dashboard", path: "patient/patientdashboard" }],
-
+    roles: ['patient'], 
+    subItems: [
+      { name: "Dashboard", path: "/patient/patientdashboard" }
+    ],
   },
 ];
 
 const AppSidebar = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { user, isAuthenticated } = useAuth();
   const location = useLocation();
 
   type OpenSubmenu = { type: string; index: number } | null;
   const [openSubmenu, setOpenSubmenu] = useState<OpenSubmenu>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<{ [key: string]: number }>(
-    {}
-  );
+  const [subMenuHeight, setSubMenuHeight] = useState<{ [key: string]: number }>({});
   const subMenuRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  const filteredNavItems = React.useMemo(() => {
+    if (!isAuthenticated || !user) return [];
+    return navItems.filter((nav) => nav.roles.includes(user.role));
+  }, [isAuthenticated, user]);
 
   const isActive = useCallback(
     (path: string) => location.pathname === path,
     [location.pathname]
   );
 
+
   useEffect(() => {
+    // Sync open submenu to the current pathname but avoid setting state
+    // to a new object repeatedly when nothing actually changed.
     let submenuMatched = false;
-    navItems.forEach((nav, index) => {
+    filteredNavItems.forEach((nav, index) => {
       if (nav.subItems) {
         nav.subItems.forEach((subItem) => {
-          if (isActive(subItem.path)) {
-            setOpenSubmenu({ type: "main", index });
+          if (subItem.path === location.pathname) {
+            setOpenSubmenu((prev) =>
+              prev && prev.index === index ? prev : { type: "main", index }
+            );
             submenuMatched = true;
           }
         });
       }
     });
-    if (!submenuMatched) setOpenSubmenu(null);
-  }, [location, isActive]);
 
+    if (!submenuMatched) {
+      setOpenSubmenu((prev) => (prev === null ? prev : null));
+    }
+  }, [location.pathname, filteredNavItems]);
+  
   useEffect(() => {
     if (openSubmenu !== null) {
       const key = `main-${openSubmenu.index}`;
@@ -98,7 +116,7 @@ const AppSidebar = () => {
     );
   };
 
-  const renderMenuItems = (items: typeof navItems) => (
+  const renderMenuItems = (items: typeof filteredNavItems) => (
     <ul className="flex flex-col gap-4">
       {items.map((nav, index) => (
         <li key={nav.name}>
@@ -187,7 +205,7 @@ const AppSidebar = () => {
       ))}
     </ul>
   );
-
+  
   return (
     <aside
       className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
@@ -254,7 +272,7 @@ const AppSidebar = () => {
                   <HorizontaLDots className="size-6" />
                 )}
               </h2>
-              {renderMenuItems(navItems)}
+              {renderMenuItems(filteredNavItems)}
             </div>
           </div>
         </nav>

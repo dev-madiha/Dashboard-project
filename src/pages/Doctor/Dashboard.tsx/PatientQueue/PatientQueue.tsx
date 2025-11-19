@@ -22,15 +22,18 @@ interface QueueItem {
 }
 
 const PatientQueue = () => {
+
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState<QueueItem | null>(
     null
   );
+
   const [error, setError] = useState("");
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-  
+
   useEffect(() => {
+
     const fetchQueue = async () => {
       try {
         setLoading(true);
@@ -52,7 +55,6 @@ const PatientQueue = () => {
 
 
   const handleExitPatient = async (queueId: string) => {
-    
     try {
       const token = localStorage.getItem("access_token");
       const res = await api.put(
@@ -66,6 +68,7 @@ const PatientQueue = () => {
       setQueue((prevQueue) =>
         prevQueue.filter((item) => item.queue_id !== queueId)
       );
+
     } catch (err) {
       console.error("Error exiting patient:", err);
       alert("Failed to exit patient. Please try again.");
@@ -73,6 +76,7 @@ const PatientQueue = () => {
   };
 
   return (
+
     <div className="bg-white shadow-md rounded-2xl p-5">
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-lg font-semibold text-gray-800">Patient Queue</h1>
@@ -89,6 +93,7 @@ const PatientQueue = () => {
       ) : queue.length === 0 ? (
         <p className="text-gray-500 text-center py-5">No patients in queue</p>
       ) : (
+
         <div className="space-y-3">
           {queue.map((item, index) => (
             <div
@@ -99,6 +104,7 @@ const PatientQueue = () => {
                 <div className="w-10 h-10 flex items-center justify-center bg-green-100 text-green-600 rounded-full">
                   <Circle size={22} />
                 </div>
+
                 <div>
                   <h2 className="font-medium text-gray-800">
                     {item.patient?.first_name || "Unknown"}
@@ -158,6 +164,7 @@ const PatientQueue = () => {
             <h2 className="text-xl font-semibold text-gray-800 mb-3">
               Patient Details
             </h2>
+
             <div className="space-y-2 text-gray-700">
               <p>
                 <strong>Name:</strong>{" "}

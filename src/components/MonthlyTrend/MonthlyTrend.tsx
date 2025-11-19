@@ -112,7 +112,6 @@ const MontlyTrend = () => {
               </div>
             </div>
 
-          
             <div className="h-[320px] w-full">
               <Chart
                 options={options}
