@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "../../../Api/axiosInstance";
 import { Search, Loader2, UserRound } from "lucide-react";
 import { toast } from "react-toastify";
+import { useAuth } from "../../../../context/AuthContext";
 
 interface Patient {
   id: string;
@@ -18,6 +19,8 @@ interface Patient {
 }
 
 const Patientrec = () => {
+  const { user } = useAuth();
+  const canViewPatients = user?.permissions?.includes("patient:view");
 
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,9 +59,17 @@ const Patientrec = () => {
     e.preventDefault();
     fetchPatients(searchQuery);
   };
+  if (!canViewPatients) {
+    return (
+      <div className="p-6 min-h-screen bg-gray-50 flex justify-center items-center">
+        <p className="text-red-500 text-lg font-semibold">
+          You do not have permission to view patient records.
+        </p>
+      </div>
+    );
+  }
 
   return (
-
     <div className="p-6 min-h-screen bg-gray-50">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6">
         <div>

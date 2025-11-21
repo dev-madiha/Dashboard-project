@@ -3,11 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import api from "./Api/axiosInstance";
+import usePermission from "../Hook/usePermission";
 
 const UserManag = () => {
+  const canViewUsers = usePermission("user:view");
+  const canAddUsers = usePermission("user:create");
+  const canEditUsers = usePermission("patient:update");
+  const canDeleteUsers = usePermission("patient:delete");
+
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -19,7 +24,6 @@ const UserManag = () => {
         const res = await api.get("/auth/");
         setUsers(res.data);
         toast.success("Users loaded successfully!");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         console.error("Error fetching users:", err);
         setError("Failed to fetch user data. Please log in again.");
@@ -46,30 +50,38 @@ const UserManag = () => {
   };
 
   const navigate = useNavigate();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEdit = (user: any) => {
+    if (!canEditUsers) return toast.error(" Permission denied!");
     navigate(`/admin/user/edit-user/${user.id}`, { state: user });
   };
 
   const handleAdd = () => {
+    if (!canAddUsers) return toast.error(" Permission denied!");
     navigate("/admin/user/create");
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDelete = async (id: any) => {
+    if (!canDeleteUsers) return toast.error(" Permission denied!");
     if (!window.confirm("Are you sure you want to delete this user?")) return;
+
     try {
       await api.delete(`/auth/${id}`);
       toast.success("User deleted successfully!");
-      setUsers((prev) => prev.filter((user) => user.id !== id));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Error deleting user:", error);
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+    } catch {
+      toast.error("Failed to delete user!");
     }
   };
 
-  return (
+  if (!canViewUsers) {
+    return (
+      <div className="p-6 text-center text-red-500 text-xl font-semibold">
+        You don't have permission to view users
+      </div>
+    );
+  }
 
+  return (
     <div className="space-y-8">
       <ToastContainer position="top-right" autoClose={3000} />
       <div>
@@ -92,7 +104,6 @@ const UserManag = () => {
           if (title === "Doctors")
             count = users.filter((u) => u.role === "doctor").length;
           return (
-
             <div
               key={i}
               className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]"
@@ -119,7 +130,6 @@ const UserManag = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between w-full">
-          
           <input
             type="text"
             placeholder="Search by username, email, or role"
@@ -127,15 +137,21 @@ const UserManag = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full sm:w-1/2 rounded-lg border bg-gray-100 border-gray-300 dark:border-gray-700 px-3 py-2 text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:outline-none"
           />
-
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button
+            {/* <button
               onClick={handleAdd}
               className="px-3 py-3 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition"
             >
               + Add New User
-            </button>
-
+            </button> */}
+            {canAddUsers && (
+              <button
+                onClick={handleAdd}
+                className="px-3 py-3 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition"
+              >
+                + Add New User
+              </button>
+            )}
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -193,18 +209,22 @@ const UserManag = () => {
                         </span>
                       </td>
                       <td className="px-6 py-3 flex items-center gap-3">
-                        <button
-                          onClick={() => handleEdit(user)}
-                          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user.id)}
-                          className="px-3 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition"
-                        >
-                          Delete
-                        </button>
+                        {canEditUsers && (
+                          <button
+                            onClick={() => handleEdit(user)}
+                            className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {canDeleteUsers && (
+                          <button
+                            onClick={() => handleDelete(user.id)}
+                            className="px-3 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))

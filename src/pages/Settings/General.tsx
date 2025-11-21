@@ -3,8 +3,12 @@ import api from "../Api/axiosInstance";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AxiosError } from "axios";
+import { useAuth } from "../../context/AuthContext";
 
 const General = () => {
+  const { user } = useAuth();
+  const hasPermission = user?.permissions?.includes("settings:update");
+
   const [formData, setFormData] = useState({
     company_name: "",
     support_email: "",
@@ -35,7 +39,6 @@ const General = () => {
         });
       } catch (error: unknown) {
         const err = error as AxiosError<{ detail?: string }>;
-        console.error("Error fetching settings:", err);
         toast.error(err.response?.data?.detail || "Failed to load settings.");
       } finally {
         setLoading(false);
@@ -46,6 +49,7 @@ const General = () => {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!hasPermission) return; // prevent edits
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -93,6 +97,11 @@ const General = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!hasPermission) {
+      toast.error("You do not have permission to update settings.");
+      return;
+    }
+
     if (!validateForm()) return;
 
     try {
@@ -111,13 +120,12 @@ const General = () => {
         system_version: "v2.5.1",
         extra: {},
       };
-      const res = await api.put(`${API_BASE_URL}/settings`, payload);
+
+      await api.put(`${API_BASE_URL}/settings`, payload);
       toast.success("Settings updated successfully!");
-      console.log("Response:", res.data);
     } catch (error: unknown) {
       const err = error as AxiosError<{ detail?: string }>;
-      console.error("Error fetching settings:", err);
-      toast.error(err.response?.data?.detail || "Failed to load settings.");
+      toast.error(err.response?.data?.detail || "Failed to update settings.");
     } finally {
       setLoading(false);
     }
@@ -126,12 +134,19 @@ const General = () => {
   return (
     <div className="bg-gray-50 min-h-screen p-6">
       <ToastContainer />
+
       <div className="mb-8 text-center md:text-left">
         <h1 className="text-3xl font-semibold text-gray-800">Settings</h1>
         <p className="text-gray-500 mt-1">
           Manage system configuration and preferences
         </p>
       </div>
+
+      {!hasPermission && (
+        <p className="text-red-600 text-center font-medium mb-4">
+          ⚠ You do not have permission to update settings. View only mode.
+        </p>
+      )}
 
       <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-8">
         {loading ? (
@@ -143,152 +158,88 @@ const General = () => {
                 General Settings
               </h2>
               <p className="text-gray-500 mt-1">Basic system configuration</p>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Company Name
-                  </label>
-                  <input
-                    name="company_name"
-                    type="text"
-                    value={formData.company_name}
-                    onChange={handleChange}
-                    className={`border ${
-                      errors.company_name ? "border-red-500" : "border-gray-300"
-                    } rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500`}
-                  />
-                  {errors.company_name && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.company_name}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Support Email
-                  </label>
-                  <input
-                    name="support_email"
-                    type="email"
-                    value={formData.support_email}
-                    onChange={handleChange}
-                    className={`border ${
-                      errors.support_email
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    } rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500`}
-                  />
-                  {errors.support_email && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.support_email}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Support Phone
-                  </label>
-                  <input
-                    name="support_phone"
-                    type="text"
-                    value={formData.support_phone}
-                    onChange={handleChange}
-                    className={`border ${
-                      errors.support_phone
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    } rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500`}
-                  />
-                  {errors.support_phone && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.support_phone}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Website URL
-                  </label>
-                  <input
-                    name="website_url"
-                    type="url"
-                    value={formData.website_url}
-                    onChange={handleChange}
-                    className={`border ${
-                      errors.website_url ? "border-red-500" : "border-gray-300"
-                    } rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500`}
-                  />
-                  {errors.website_url && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.website_url}
-                    </p>
-                  )}
-                </div>
+                {[
+                  { label: "Company Name", name: "company_name" },
+                  { label: "Support Email", name: "support_email", type: "email" },
+                  { label: "Support Phone", name: "support_phone" },
+                  { label: "Website URL", name: "website_url", type: "url" },
+                ].map((field) => (
+                  <div key={field.name} className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-700 mb-1">
+                      {field.label}
+                    </label>
+                    <input
+                      name={field.name}
+                      type={field.type || "text"}
+                      value={(formData as any)[field.name]}
+                      onChange={handleChange}
+                      disabled={!hasPermission}
+                      className={`border ${
+                        errors[field.name]
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 ${
+                        !hasPermission ? "bg-gray-100 cursor-not-allowed" : ""
+                      }`}
+                    />
+                    {errors[field.name] && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors[field.name]}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="border-t border-gray-200"></div>
+
             <div>
-              <h2 className="text-2xl font-semibold text-gray-800">
-                Voucher Settings
-              </h2>
+              <h2 className="text-2xl font-semibold text-gray-800">Voucher Settings</h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Default Validity (days)
-                  </label>
-                  <input
-                    name="voucher_validity_days"
-                    type="number"
-                    value={formData.voucher_validity_days}
-                    onChange={handleChange}
-                    className={`border ${
-                      errors.voucher_validity_days
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    } rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500`}
-                  />
-                  {errors.voucher_validity_days && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.voucher_validity_days}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Voucher Price
-                  </label>
-                  <input
-                    name="voucher_price"
-                    type="number"
-                    value={formData.voucher_price}
-                    onChange={handleChange}
-                    className={`border ${
-                      errors.voucher_price
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    } rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500`}
-                  />
-                  {errors.voucher_price && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.voucher_price}
-                    </p>
-                  )}
-                </div>
+                {[
+                  { label: "Default Validity (days)", name: "voucher_validity_days", type: "number" },
+                  { label: "Voucher Price", name: "voucher_price", type: "number" },
+                ].map((field) => (
+                  <div key={field.name} className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-700 mb-1">
+                      {field.label}
+                    </label>
+                    <input
+                      name={field.name}
+                      type={field.type}
+                      value={(formData as any)[field.name]}
+                      onChange={handleChange}
+                      disabled={!hasPermission}
+                      className={`border ${
+                        errors[field.name]
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 ${
+                        !hasPermission ? "bg-gray-100 cursor-not-allowed" : ""
+                      }`}
+                    />
+                    {errors[field.name] && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors[field.name]}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="pt-6 flex justify-center md:justify-end">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !hasPermission}
                 className={`bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-200 ${
-                  loading ? "opacity-70 cursor-not-allowed" : ""
+                  loading || !hasPermission
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
                 }`}
               >
                 {loading ? "Saving..." : "Save Changes"}

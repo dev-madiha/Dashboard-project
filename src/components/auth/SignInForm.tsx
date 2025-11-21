@@ -1,3 +1,5 @@
+
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -15,7 +17,7 @@ export default function SignInForm() {
   const [isChecked, setIsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth(); // AuthContext se login function
+  const { login } = useAuth(); 
 
   const [formData, setFormData] = useState({
     username: "",
@@ -30,10 +32,9 @@ export default function SignInForm() {
   };
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
   const handleSubmit = async (e) => {
-    e.preventDefault();
 
+    e.preventDefault();
     if (!formData.username || !formData.password) {
       toast.error("Please fill in all required fields.");
       return;
@@ -44,7 +45,6 @@ export default function SignInForm() {
       const data = new URLSearchParams();
       data.append("username", formData.username);
       data.append("password", formData.password);
-
       const response = await axios.post(`${API_BASE_URL}/auth/login`, data, {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -52,7 +52,6 @@ export default function SignInForm() {
         },
       });
 
-      // login(response.data);
       login({
         id: response.data.user_id,
         username: response.data.username,
@@ -60,11 +59,10 @@ export default function SignInForm() {
         role: response.data.role,
         access_token: response.data.access_token,
         token_type: response.data.token_type,
-        permissions: response.data.permissions, // ⭐ MOST IMPORTANT
+        permissions: response.data.permissions, 
       });
 
       toast.success("Login successful!");
-
       if (response.data.role === "admin") {
         navigate("/admin/dashboard");
       } else if (response.data.role === "doctor") {
@@ -91,7 +89,8 @@ export default function SignInForm() {
     }
   };
 
-  return (
+  return ( 
+    
     <div className="flex flex-col flex-1">
       <div className="w-full max-w-md pt-10 mx-auto">
         <Link
@@ -102,6 +101,7 @@ export default function SignInForm() {
           Back to dashboard
         </Link>
       </div>
+
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
           <div className="mb-5 sm:mb-8">
@@ -112,10 +112,12 @@ export default function SignInForm() {
               Enter your username and password to sign in!
             </p>
           </div>
+
           <div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5"></div>
             <div className="relative py-3 sm:py-5"></div>
             <form onSubmit={handleSubmit} className="space-y-6">
+
               <div>
                 <Label>
                   Username or Email <span className="text-error-500">*</span>

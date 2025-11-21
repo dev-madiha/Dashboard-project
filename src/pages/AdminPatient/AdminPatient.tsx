@@ -5,6 +5,7 @@ import api from "../Api/axiosInstance";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import usePermission from "../../Hook/usePermission";
 
 interface Patient {
   id: string;
@@ -17,6 +18,11 @@ interface Patient {
 }
 
 const AdminPatient = () => {
+  const canViewPatients = usePermission("patient:view");
+  const canEditPatients = usePermission("patient:update");
+  const canDeletePatients = usePermission("patient:delete");
+
+
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -52,7 +58,6 @@ const AdminPatient = () => {
       console.error("Fetch error:", err.response || err.message);
       setError("Failed to load patients");
       toast.error("Failed to load patients");
-
     } finally {
       setLoading(false);
     }
@@ -71,8 +76,10 @@ const AdminPatient = () => {
   const handleEdit = (patient: Patient) => {
     navigate(`/admin/patient/edit-patient/${patient.id}`, { state: patient });
   };
-  
+
   const handleDelete = async (id: string) => {
+    if (!canDeletePatients) return toast.error("❌ Permission denied!");
+
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this patient?"
     );
@@ -85,11 +92,17 @@ const AdminPatient = () => {
       toast.success("Patient deleted successfully!");
       setPatients((prev) => prev.filter((patient) => patient.id !== id));
       setTotal((prev) => prev - 1);
-    } catch (error: any) {
-      console.error("Error deleting patient:", error.response || error.message);
+    } catch {
       toast.error("Failed to delete patient");
     }
   };
+  if (!canViewPatients) {
+    return (
+      <div className="p-6 text-center text-red-500 text-xl font-semibold">
+        ⛔ You don’t have permission to view patients
+      </div>
+    );
+  }
 
   return (
     <>
@@ -198,18 +211,23 @@ const AdminPatient = () => {
                      </td> */}
 
                       <td className="px-2 py-4 text-center flex gap-2">
-                        <button
-                          onClick={() => handleDelete(patient.id)}
-                          className="px-3 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition"
-                        >
-                          Delete
-                        </button>
-                        <button
-                          onClick={() => handleEdit(patient)}
-                          className="px-5 py-1 text-xs font-medium text-white bg-blue-400 hover:bg-blue-500 rounded-lg transition"
-                        >
-                          Edit
-                        </button>
+                        {canDeletePatients && (
+                          <button
+                            onClick={() => handleDelete(patient.id)}
+                            className="px-3 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition"
+                          >
+                            Delete
+                          </button>
+                        )}
+
+                        {canEditPatients && (
+                          <button
+                            onClick={() => handleEdit(patient)}
+                            className="px-5 py-1 text-xs font-medium text-white bg-blue-400 hover:bg-blue-500 rounded-lg transition"
+                          >
+                            Edit
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

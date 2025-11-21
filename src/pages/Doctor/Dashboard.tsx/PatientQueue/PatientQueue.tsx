@@ -1,8 +1,7 @@
-
-
 import React, { useEffect, useState } from "react";
 import { Circle, Clock, X } from "lucide-react";
 import api from "../../../Api/axiosInstance";
+import { useAuth } from "../../../../context/AuthContext";
 
 interface Patient {
   id: string;
@@ -22,6 +21,10 @@ interface QueueItem {
 }
 
 const PatientQueue = () => {
+  const { user } = useAuth();
+
+  const canViewQueue = user?.permissions?.includes("queue:view");
+  const canExitPatient = user?.permissions?.includes("queue:accept");
 
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +36,6 @@ const PatientQueue = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
-
     const fetchQueue = async () => {
       try {
         setLoading(true);
@@ -53,12 +55,11 @@ const PatientQueue = () => {
     fetchQueue();
   }, []);
 
-
   const handleExitPatient = async (queueId: string) => {
     try {
       const token = localStorage.getItem("access_token");
       const res = await api.put(
-        `${API_BASE_URL}/doctor-portal/queue/${queueId}/exit`, 
+        `${API_BASE_URL}/doctor-portal/queue/${queueId}/exit`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -68,15 +69,20 @@ const PatientQueue = () => {
       setQueue((prevQueue) =>
         prevQueue.filter((item) => item.queue_id !== queueId)
       );
-
     } catch (err) {
       console.error("Error exiting patient:", err);
       alert("Failed to exit patient. Please try again.");
     }
   };
+  if (!canViewQueue) {
+    return (
+      <div className="bg-white shadow-md rounded-2xl p-5 text-center text-red-500 font-semibold">
+        You do not have permission to view the queue.
+      </div>
+    );
+  }
 
   return (
-
     <div className="bg-white shadow-md rounded-2xl p-5">
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-lg font-semibold text-gray-800">Patient Queue</h1>
@@ -93,7 +99,6 @@ const PatientQueue = () => {
       ) : queue.length === 0 ? (
         <p className="text-gray-500 text-center py-5">No patients in queue</p>
       ) : (
-
         <div className="space-y-3">
           {queue.map((item, index) => (
             <div
@@ -104,7 +109,6 @@ const PatientQueue = () => {
                 <div className="w-10 h-10 flex items-center justify-center bg-green-100 text-green-600 rounded-full">
                   <Circle size={22} />
                 </div>
-
                 <div>
                   <h2 className="font-medium text-gray-800">
                     {item.patient?.first_name || "Unknown"}
@@ -126,13 +130,6 @@ const PatientQueue = () => {
                 </p>
               </div>
 
-              {/* <div className="flex items-center gap-1 text-sm text-gray-500">
-                <Clock size={14} />
-                <span>
-                  Waiting: {item.waiting_time_minutes ?? "N/A"} min
-                </span>
-              </div> */}
-
               <div className="flex gap-2 flex-col">
                 <button
                   onClick={() => setSelectedPatient(item)}
@@ -140,12 +137,14 @@ const PatientQueue = () => {
                 >
                   View Details
                 </button>
-                <button
-                  onClick={() => handleExitPatient(item.queue_id)}
-                  className="px-6 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600"
-                >
-                  Exit
-                </button>
+                {canExitPatient && (
+                  <button
+                    onClick={() => handleExitPatient(item.queue_id)}
+                    className="px-6 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600"
+                  >
+                    Exit
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -171,20 +170,25 @@ const PatientQueue = () => {
                 {selectedPatient.patient?.first_name || "N/A"}
                 {selectedPatient.patient?.last_name || ""}
               </p>
+
               <p>
                 <strong>Phone:</strong>{" "}
                 {selectedPatient.patient?.phone || "N/A"}
               </p>
+
               <p>
                 <strong>Email:</strong>{" "}
                 {selectedPatient.patient?.email_encrypted || "N/A"}
               </p>
+
               <p>
                 <strong>Status:</strong> {selectedPatient.status}
               </p>
+
               <p>
                 <strong>Queue Position:</strong> {selectedPatient.position}
               </p>
+
               <p>
                 <strong>Registered At:</strong>
                 {selectedPatient.registered_at
